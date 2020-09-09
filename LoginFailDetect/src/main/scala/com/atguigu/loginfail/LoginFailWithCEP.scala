@@ -14,6 +14,8 @@ import org.apache.flink.streaming.api.windowing.time.Time
  * @Author: Sdaer
  * @Date: 2020-09-08
  * @Desc:
+ *       CEP编程：将复杂流程简化处理
+ *
  */
 object LoginFailWithCEP {
 
@@ -35,10 +37,17 @@ object LoginFailWithCEP {
       })
 
     //2.定义一个匹配模式，用来检测复杂事件序列
+/*  m1
     val loginFaulPattern = Pattern
       .begin[UserLoginEvent]("firstFail").where(_.eventType == "fail")
       .next("secondFail").where(_.eventType == "fail")
       .next("thirdFail").where(_.eventType == "fail")
+      .within(Time.seconds(5))
+*/
+
+    //M2
+    val loginFaulPattern = Pattern
+      .begin[UserLoginEvent]("fail").where(_.eventType == "fail").times(3)
       .within(Time.seconds(5))
 
     //3.对数据流应用定义好的模式，得到PatternStream
@@ -58,11 +67,20 @@ class LoginFailSelect() extends PatternSelectFunction[UserLoginEvent,LoginFailWa
   override def select(pattern: util.Map[String, util.List[UserLoginEvent]]): LoginFailWarning = {
 
     //从map结果中可以拿到第一层和第二层登陆失败的事件
+/*  m1
     val firstFailEvent = pattern.get("firstFail").get(0)
     val secondFailEvent = pattern.get("secondFail").get(0)
     val thirdFailEvent = pattern.get("thirdFail").get(0)
-
     LoginFailWarning(firstFailEvent.userId, firstFailEvent.timestamp, thirdFailEvent.timestamp,"login fail" )
+*/
+
+    //M2
+    val firstFailEvent = pattern.get("fail").get(0)
+    val secondFailEvent = pattern.get("fail").get(1)
+    val thirdFailEvent = pattern.get("fail").get(2)
+    LoginFailWarning(firstFailEvent.userId, firstFailEvent.timestamp, thirdFailEvent.timestamp,"login fail" )
+
+
 
 
   }
